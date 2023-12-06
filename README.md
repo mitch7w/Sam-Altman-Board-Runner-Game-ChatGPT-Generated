@@ -14,6 +14,6 @@ The entire history of prompts used to build the game can be found at https://cha
 
 Move by using the UP and DOWN keys on your keyboard or by pressing on your touchscreen above or below Sam.
 
-It works slightly better on Desktop and slightly minimized.
+For best performance use Chrome on Desktop and slightly minimized.
 
 Can't wait for AGI @OpenAI 😃 

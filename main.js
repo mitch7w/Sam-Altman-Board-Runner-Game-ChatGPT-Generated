@@ -95,7 +95,7 @@ function createDifficultyButtons() {
 
     subTitleText = document.createElement('div');
     subTitleText.style.position = 'absolute';
-    subTitleText.style.top = '42%';
+    subTitleText.style.top = '44%';
     subTitleText.style.left = '50%';
     subTitleText.style.textAlign = "center";
     subTitleText.style.padding = "2rem";
@@ -107,7 +107,7 @@ function createDifficultyButtons() {
 
     instructionText = document.createElement('div');
     instructionText.style.position = 'absolute';
-    instructionText.style.top = '90%';
+    instructionText.style.top = '95%';
     instructionText.style.left = '50%';
     instructionText.style.transform = 'translateX(-50%)';
     instructionText.style.color = '#ffffff';
@@ -127,7 +127,7 @@ function createDifficultyButtons() {
     for (const difficulty of difficultyButtons) {
         const button = document.createElement('button');
         button.style.position = 'absolute';
-        button.style.top = `${60 + (difficultyButtons.indexOf(difficulty) * 10)}%`;
+        button.style.top = `${64 + (difficultyButtons.indexOf(difficulty) * 10)}%`;
         button.style.left = '50%';
         button.style.color = '#098ed6';
         button.style.textAlign = 'center'
