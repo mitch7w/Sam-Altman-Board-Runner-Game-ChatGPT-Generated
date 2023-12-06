@@ -73,7 +73,7 @@ function createDifficultyButtons() {
     samImage = document.createElement('img');
     samImage.src = 'sam.png';
     samImage.style.position = 'absolute';
-    samImage.style.top = '25%';
+    samImage.style.top = '20%';
     samImage.style.left = '85%';
     samImage.style.transform = 'translateX(-50%)';
     samImage.style.width = '50rem'; // Adjust the width as needed
@@ -81,7 +81,7 @@ function createDifficultyButtons() {
 
     titleText = document.createElement('div');
     titleText.style.position = 'absolute';
-    titleText.style.top = '20%';
+    titleText.style.top = '15%';
     titleText.style.left = '50%';
     titleText.style.transform = 'translateX(-50%)';
     titleText.style.color = '#ffffff';
@@ -95,7 +95,7 @@ function createDifficultyButtons() {
 
     subTitleText = document.createElement('div');
     subTitleText.style.position = 'absolute';
-    subTitleText.style.top = '44%';
+    subTitleText.style.top = '39%';
     subTitleText.style.left = '50%';
     subTitleText.style.textAlign = "center";
     subTitleText.style.padding = "2rem";
@@ -127,7 +127,7 @@ function createDifficultyButtons() {
     for (const difficulty of difficultyButtons) {
         const button = document.createElement('button');
         button.style.position = 'absolute';
-        button.style.top = `${64 + (difficultyButtons.indexOf(difficulty) * 12)}%`;
+        button.style.top = `${59 + (difficultyButtons.indexOf(difficulty) * 12)}%`;
         button.style.left = '50%';
         button.style.color = '#098ed6';
         button.style.textAlign = 'center'
