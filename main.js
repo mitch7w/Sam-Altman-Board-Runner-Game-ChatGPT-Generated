@@ -21,6 +21,7 @@ const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 document.body.style.touchAction = 'manipulation'; // prevents double tapping to zoom while playing
+document.body.style.backgroundColor = 'black'; // prevents double tapping to zoom while playing
 // document.body.style.overflow = "hidden";
 const textureLoader = new THREE.TextureLoader();
 const heartTexture = textureLoader.load('heart.png'); // image textures
