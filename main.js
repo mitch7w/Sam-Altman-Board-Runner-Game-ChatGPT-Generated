@@ -1,37 +1,180 @@
-// Variable to track the game state
-let gameOver = false;
+// Variables to track the game state
+let gameOver = true;
 let gameOverMessage;
 let restartButton;
+let subTitleText;
+let titleText;
+let spriteGenerationFrequency;
+let characterSprite;
+const textureLoader = new THREE.TextureLoader();
+const heartTexture = textureLoader.load('heart.png'); // image textures
+const logoTexture = textureLoader.load('logo.png');
+const characterTexture = textureLoader.load('sam.png', () => { // Load the character texture
+    loadCharacter();
+});
+
+function loadCharacter() {
+    const characterMaterial = new THREE.SpriteMaterial({ map: characterTexture });
+    characterSprite = new THREE.Sprite(characterMaterial);
+    // Calculate the aspect ratio of the loaded character image
+    const aspectRatio = characterTexture.image.width / characterTexture.image.height;
+    // Adjust the scale based on the aspect ratio to maintain proportions
+    const desiredHeight = 4; // Set the desired height of the character sprite
+    const desiredWidth = aspectRatio * desiredHeight;
+    characterSprite.scale.set(desiredWidth, desiredHeight, 1);
+    // Create the character sprite
+
+    scene.add(characterSprite);
+    // Set the position of the character sprite
+    characterSprite.position.set(-(window.innerWidth / window.innerHeight) * 10, 0, -15);
+}
+
+let collidingSprites = []; // Array to store colliding sprite objects
+let score = 0;
+let scoreDisplay;
+let isMovingUp = false; // control character movement
+let isMovingDown = false;
+
+function setupScoreDisplay() {
+    scoreDisplay = document.createElement('div');
+    scoreDisplay.style.position = 'absolute';
+    scoreDisplay.style.top = '10px';
+    scoreDisplay.style.right = '10px';
+    scoreDisplay.style.fontSize = '2rem';
+    scoreDisplay.style.color = '#ffffff';
+    scoreDisplay.innerHTML = `Score: ${score}`;
+    document.body.appendChild(scoreDisplay);
+}
 
 // Set up the scene, camera, and renderer
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 20);
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
-const textureLoader = new THREE.TextureLoader();
+setupBackground();
 
-// Background Gradient
-const canvasGradient = document.createElement('canvas');
-canvasGradient.width = window.innerWidth;
-canvasGradient.height = window.innerHeight;
+// Function to create difficulty selection buttons
+function createDifficultyButtons() {
+    titleText = document.createElement('div');
+    titleText.style.position = 'absolute';
+    titleText.style.top = '30%';
+    titleText.style.left = '50%';
+    titleText.style.transform = 'translateX(-50%)';
+    titleText.style.color = '#ffffff';
+    titleText.style.fontSize = '3rem';
+    titleText.style.textAlign = "center";
+    titleText.style.fontWeight = 'bold';
+    titleText.textContent = 'Altman Adventures';
+    document.body.appendChild(titleText);
 
-const canvasContext = canvasGradient.getContext('2d');
-const gradient = canvasContext.createLinearGradient(0, 0, 0, window.innerHeight);
-gradient.addColorStop(0, '#6699ff'); // Light blue
-gradient.addColorStop(1, '#003366'); // Dark blue
-canvasContext.fillStyle = gradient;
-canvasContext.fillRect(0, 0, window.innerWidth, window.innerHeight);
+    subTitleText = document.createElement('div');
+    subTitleText.style.position = 'absolute';
+    subTitleText.style.top = '40%';
+    subTitleText.style.left = '50%';
+    subTitleText.style.textAlign = "center";
+    subTitleText.style.padding = "1rem";
+    subTitleText.style.transform = 'translateX(-50%)';
+    subTitleText.style.color = '#ffffff';
+    subTitleText.style.fontSize = '1.5rem';
+    subTitleText.textContent = 'Gather love from your employees and avoid the Board!';
+    document.body.appendChild(subTitleText);
 
-const backgroundTexture = new THREE.CanvasTexture(canvasGradient);
-const backgroundMaterial = new THREE.MeshBasicMaterial({ map: backgroundTexture });
-const backgroundGeometry = new THREE.PlaneGeometry(2, 2, 1, 1);
-const background = new THREE.Mesh(backgroundGeometry, backgroundMaterial);
-scene.add(background);
+    // Function to handle difficulty selection
+    function selectDifficulty(difficulty) {
+        removeDifficultyButtons(); // Remove difficulty buttons once selected
+        startGame(difficulty); // Start the game with the selected difficulty
+    }
 
-// Load the heart and logo textures
-const heartTexture = textureLoader.load('heart.png');
-const logoTexture = textureLoader.load('logo.png');
+    // Create buttons for different difficulty levels
+    const difficultyButtons = ['Easy', 'Medium', 'Satya Nadella'];
+    for (const difficulty of difficultyButtons) {
+        const button = document.createElement('button');
+        button.style.position = 'absolute';
+        button.style.top = `${55 + (difficultyButtons.indexOf(difficulty) * 10)}%`;
+        button.style.left = '50%';
+        button.style.transform = 'translateX(-50%)';
+        button.style.fontSize = '1.5rem';
+        button.textContent = difficulty;
+        button.onclick = () => selectDifficulty(difficulty);
+        document.body.appendChild(button);
+    }
+}
+
+// Function to remove difficulty selection buttons and display score
+function removeDifficultyButtons() {
+    const buttons = document.querySelectorAll('button');
+    buttons.forEach(button => button.remove());
+    document.body.removeChild(titleText);
+    document.body.removeChild(subTitleText);
+    setupScoreDisplay();
+}
+
+// Initialize the game by creating difficulty selection buttons
+createDifficultyButtons();
+
+function setupBackground() {
+    const canvasGradient = document.createElement('canvas');
+    canvasGradient.width = window.innerWidth;
+    canvasGradient.height = window.innerHeight;
+
+    const canvasContext = canvasGradient.getContext('2d');
+    let gradient = canvasContext.createLinearGradient(0, 0, 0, window.innerHeight);
+    gradient.addColorStop(0, '#098ed6'); // Light blue
+    canvasContext.fillStyle = gradient;
+    canvasContext.fillRect(0, 0, window.innerWidth, window.innerHeight);
+
+    const backgroundTexture = new THREE.CanvasTexture(canvasGradient);
+    // Create a plane geometry with the same aspect ratio as the window
+    const aspect = window.innerWidth / window.innerHeight;
+    const backgroundGeometry = new THREE.PlaneGeometry(2 * aspect, 2, 1, 1);
+
+    // Use the background texture in a material
+    const backgroundMaterial = new THREE.MeshBasicMaterial({ map: backgroundTexture });
+    const background = new THREE.Mesh(backgroundGeometry, backgroundMaterial);
+    // Setting the z-position
+    background.position.z = -19; // Adjust the value based on your scene setup
+    // Scale the background to cover the viewport
+    background.scale.set(window.innerWidth, window.innerHeight, 1);
+    scene.add(background);
+}
+
+
+// Function to update the background texture size on window resize
+function onWindowResize() {
+    characterSprite.position.set(-(window.innerWidth / window.innerHeight) * 10, 0, -15);
+}
+
+
+// Function to start the game based on selected difficulty
+function startGame(difficulty) {
+    removeGameOverElements();
+    gameOver = false;
+    score = 0;
+    collidingSprites = []; // Clear collidingSprites array
+
+    // Adjust the frequency of generated colliding sprites based on difficulty
+    switch (difficulty) {
+        case 'Easy':
+            spriteGenerationFrequency = 0.005; // Adjust as needed
+            break;
+        case 'Medium':
+            spriteGenerationFrequency = 0.01; // Adjust as needed
+            break;
+        case 'Satya Nadella':
+            spriteGenerationFrequency = 0.02; // Adjust as needed
+            break;
+        default:
+            spriteGenerationFrequency = 0.005; // Default to easy
+            break;
+    }
+}
+// Function to create colliding sprites based on selected frequency
+function createSpriteBasedOnDifficulty() {
+    if (!gameOver && Math.random() < spriteGenerationFrequency) {
+        createMovingSprite();
+    }
+}
 
 // Function to create a heart or logo sprite
 function createMovingSprite() {
@@ -47,11 +190,22 @@ function createMovingSprite() {
     const collidingSprite = new THREE.Sprite(collidingMaterial);
 
     // Set initial position randomly along the right side of the screen
-    const posX = 7;
+    const posX = (window.innerWidth / window.innerHeight) * 12;
     const posY = Math.random() * 20 - 10; // Y range from -10 to 10
     const posZ = -15; // Adjust the Z position if needed
 
     collidingSprite.position.set(posX, posY, posZ);
+
+
+    // Calculate the aspect ratio of the loaded character image
+    const aspectRatio = textureToUse.image.width / textureToUse.image.height;
+
+    // Adjust the scale based on the aspect ratio to maintain proportions
+    const desiredHeight = 1.5; // Set the desired height of the texture sprite
+    const desiredWidth = aspectRatio * desiredHeight;
+
+    collidingSprite.scale.set(desiredWidth, desiredHeight, 1);
+
 
     // Add the heart to the scene
     scene.add(collidingSprite);
@@ -77,29 +231,10 @@ function movecollidingSprites() {
     }
 }
 
-// Array to store colliding sprite objects
-let collidingSprites = [];
-
-// Set up variables
-let score = 0;
-const scoreDisplay = document.createElement('div');
-scoreDisplay.style.position = 'absolute';
-scoreDisplay.style.top = '10px';
-scoreDisplay.style.right = '10px';
-scoreDisplay.style.color = '#ffffff';
-scoreDisplay.innerHTML = `Score: ${score}`;
-document.body.appendChild(scoreDisplay);
-
-let isMovingUp = false;
-let isMovingDown = false;
 
 // Function to handle character movement
 function handleCharacterMovement(event) {
-    if (event.type === 'mousedown' || event.type === 'touchstart') {
-        isMovingUp = true;
-    } else if (event.type === 'mouseup' || event.type === 'touchend') {
-        isMovingUp = false;
-    } else if (event.type === 'keydown') {
+    if (event.type === 'keydown') {
         if (event.key === 'ArrowUp') {
             isMovingUp = true;
         } else if (event.key === 'ArrowDown') {
@@ -181,7 +316,7 @@ function checkCollision() {
                 gameOverMessage.style.left = '50%';
                 gameOverMessage.style.transform = 'translate(-50%, -50%)';
                 gameOverMessage.style.color = '#ffffff';
-                gameOverMessage.style.fontSize = '24px';
+                gameOverMessage.style.fontSize = '2rem';
                 gameOverMessage.style.textAlign = 'center'
                 gameOverMessage.textContent = '❌ You were not consistently candid in your communications with the board!';
                 // Display game over message and restart button
@@ -191,7 +326,7 @@ function checkCollision() {
                 restartButton.style.left = '50%';
                 restartButton.style.transform = 'translate(-50%, -50%)';
                 restartButton.style.color = '#FF0000';
-                restartButton.style.fontSize = '24px';
+                restartButton.style.fontSize = '2rem';
                 restartButton.style.border = '2px solid #FF0000'; // Border style
                 restartButton.style.borderRadius = '10px'; // Rounded corners
                 restartButton.style.boxShadow = '2px 2px 4px rgba(0, 0, 0, 0.3)'; // Shadow
@@ -224,20 +359,14 @@ function animate() {
     if (!gameOver) {
         // Character movement
         if (isMovingUp) {
-            characterSprite.position.y += 0.2;
+            if (characterSprite.position.y < 10) {
+                characterSprite.position.y += 0.2;
+            }
         } if (isMovingDown) {
-            characterSprite.position.y -= 0.2;
+            if (characterSprite.position.y > -10) {
+                characterSprite.position.y -= 0.2;
+            }
         }
-
-
-        // Handle character going out of screen
-        if (characterSprite.position.y < -15 || characterSprite.position.y > 15) {
-            // Implement game over logic here
-            // For now, reset character position
-            characterSprite.position.set(-6.5, 0, -10);
-            score = 0;
-        }
-
         // Create a new sprite occasionally
         if (Math.random() < 0.01) { // Adjust the probability as needed
             createMovingSprite();
@@ -255,47 +384,19 @@ function animate() {
     }
 }
 
-
-// Function to update the background texture size on window resize
-function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-
-    renderer.setSize(window.innerWidth, window.innerHeight);
-
-    canvasGradient.width = window.innerWidth;
-    canvasGradient.height = window.innerHeight;
-    gradient = canvasContext.createLinearGradient(0, 0, 0, window.innerHeight);
-    gradient.addColorStop(0, '#6699ff');
-    gradient.addColorStop(1, '#003366');
-    canvasContext.fillStyle = gradient;
-    canvasContext.fillRect(0, 0, window.innerWidth, window.innerHeight);
-
-    backgroundTexture.needsUpdate = true;
-}
-
-// Character
-// Load the image texture
-const characterTexture = textureLoader.load('sam.png', () => {
-    // Calculate the aspect ratio of the loaded character image
-    const aspectRatio = characterTexture.image.width / characterTexture.image.height;
-
-    // Adjust the scale based on the aspect ratio to maintain proportions
-    const desiredHeight = 4; // Set the desired height of the character sprite
-    const desiredWidth = aspectRatio * desiredHeight;
-
-    characterSprite.scale.set(desiredWidth, desiredHeight, 1);
-});
-
-// Create the character sprite
-const characterMaterial = new THREE.SpriteMaterial({ map: characterTexture });
-const characterSprite = new THREE.Sprite(characterMaterial);
-scene.add(characterSprite);
-
-// Set the position of the character sprite
-characterSprite.position.set(-6.5, 0, -15);
-
 window.addEventListener('resize', onWindowResize);
 
 // Start the game loop
-animate();
+// Start game loop with difficulty-based sprite creation
+function gameLoop() {
+    createSpriteBasedOnDifficulty();
+    animate();
+    requestAnimationFrame(gameLoop);
+}
+if (!gameOver) {
+    gameLoop();
+}
+
+// setupScoreDisplay
+// load character
+// load background
