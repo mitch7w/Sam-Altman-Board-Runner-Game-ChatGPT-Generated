@@ -4,14 +4,39 @@ let gameOverMessage;
 let restartButton;
 let subTitleText;
 let titleText;
+let samImage;
+let instructionText;
+let collidingSprites = []; // Array to store colliding sprite objects
+let score = 0;
+let scoreDisplay;
+let isMovingUp = false; // control character movement
+let isMovingDown = false;
 let spriteGenerationFrequency;
 let characterSprite;
+let characterTexture;
+// Set up the scene, camera, and renderer
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 20);
+const renderer = new THREE.WebGLRenderer();
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+document.body.style.touchAction = 'manipulation'; // prevents double tapping to zoom while playing
+// document.body.style.overflow = "hidden";
 const textureLoader = new THREE.TextureLoader();
 const heartTexture = textureLoader.load('heart.png'); // image textures
 const logoTexture = textureLoader.load('logo.png');
-const characterTexture = textureLoader.load('sam.png', () => { // Load the character texture
+characterTexture = textureLoader.load('sam.png', () => { // Load the character texture
     loadCharacter();
 });
+setupBackground();
+
+// Event listeners
+window.addEventListener('keydown', handleCharacterMovement);
+window.addEventListener('keyup', handleCharacterMovement);
+window.addEventListener('touchstart', handleTouchStart);
+window.addEventListener('touchend', handleTouchEnd);
+window.addEventListener('resize', onWindowResize);
+
 
 function loadCharacter() {
     const characterMaterial = new THREE.SpriteMaterial({ map: characterTexture });
@@ -29,12 +54,6 @@ function loadCharacter() {
     characterSprite.position.set(-(window.innerWidth / window.innerHeight) * 10, 0, -15);
 }
 
-let collidingSprites = []; // Array to store colliding sprite objects
-let score = 0;
-let scoreDisplay;
-let isMovingUp = false; // control character movement
-let isMovingDown = false;
-
 function setupScoreDisplay() {
     scoreDisplay = document.createElement('div');
     scoreDisplay.style.position = 'absolute';
@@ -46,39 +65,55 @@ function setupScoreDisplay() {
     document.body.appendChild(scoreDisplay);
 }
 
-// Set up the scene, camera, and renderer
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 20);
-const renderer = new THREE.WebGLRenderer();
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
-setupBackground();
-
 // Function to create difficulty selection buttons
 function createDifficultyButtons() {
+
+    // Add an image alongside the difficulty buttons
+    samImage = document.createElement('img');
+    samImage.src = 'sam.png';
+    samImage.style.position = 'absolute';
+    samImage.style.top = '25%';
+    samImage.style.left = '85%';
+    samImage.style.transform = 'translateX(-50%)';
+    samImage.style.width = '50rem'; // Adjust the width as needed
+    document.body.appendChild(samImage);
+
     titleText = document.createElement('div');
     titleText.style.position = 'absolute';
-    titleText.style.top = '30%';
+    titleText.style.top = '20%';
     titleText.style.left = '50%';
     titleText.style.transform = 'translateX(-50%)';
     titleText.style.color = '#ffffff';
-    titleText.style.fontSize = '3rem';
+    titleText.style.fontSize = '6rem';
+    titleText.style.fontFamily = 'Impact';
+    titleText.style.font = "bold"
     titleText.style.textAlign = "center";
     titleText.style.fontWeight = 'bold';
-    titleText.textContent = 'Altman Adventures';
+    titleText.textContent = "Altman's Adventures";
     document.body.appendChild(titleText);
 
     subTitleText = document.createElement('div');
     subTitleText.style.position = 'absolute';
-    subTitleText.style.top = '40%';
+    subTitleText.style.top = '42%';
     subTitleText.style.left = '50%';
     subTitleText.style.textAlign = "center";
-    subTitleText.style.padding = "1rem";
+    subTitleText.style.padding = "2rem";
     subTitleText.style.transform = 'translateX(-50%)';
     subTitleText.style.color = '#ffffff';
-    subTitleText.style.fontSize = '1.5rem';
+    subTitleText.style.fontSize = '2rem';
     subTitleText.textContent = 'Gather love from your employees and avoid the Board!';
     document.body.appendChild(subTitleText);
+
+    instructionText = document.createElement('div');
+    instructionText.style.position = 'absolute';
+    instructionText.style.top = '90%';
+    instructionText.style.left = '50%';
+    instructionText.style.transform = 'translateX(-50%)';
+    instructionText.style.color = '#ffffff';
+    instructionText.style.fontSize = '1rem';
+    instructionText.style.textAlign = "center";
+    instructionText.textContent = "Use UP and DOWN keys or press to MOVE.";
+    document.body.appendChild(instructionText);
 
     // Function to handle difficulty selection
     function selectDifficulty(difficulty) {
@@ -91,14 +126,21 @@ function createDifficultyButtons() {
     for (const difficulty of difficultyButtons) {
         const button = document.createElement('button');
         button.style.position = 'absolute';
-        button.style.top = `${55 + (difficultyButtons.indexOf(difficulty) * 10)}%`;
+        button.style.top = `${60 + (difficultyButtons.indexOf(difficulty) * 10)}%`;
         button.style.left = '50%';
+        button.style.color = '#098ed6';
+        button.style.textAlign = 'center'
+        button.style.border = '2px solid #098ed6'; // Border style
+        button.style.borderRadius = '10px'; // Rounded corners
+        button.style.boxShadow = '2px 2px 4px rgba(0, 0, 0, 0.3)'; // Shadow
+        button.style.padding = '10px 10px'; // Padding for button
         button.style.transform = 'translateX(-50%)';
-        button.style.fontSize = '1.5rem';
+        button.style.fontSize = '3rem';
         button.textContent = difficulty;
         button.onclick = () => selectDifficulty(difficulty);
         document.body.appendChild(button);
     }
+
 }
 
 // Function to remove difficulty selection buttons and display score
@@ -107,11 +149,10 @@ function removeDifficultyButtons() {
     buttons.forEach(button => button.remove());
     document.body.removeChild(titleText);
     document.body.removeChild(subTitleText);
+    document.body.removeChild(samImage);
+    document.body.removeChild(instructionText);
     setupScoreDisplay();
 }
-
-// Initialize the game by creating difficulty selection buttons
-createDifficultyButtons();
 
 function setupBackground() {
     const canvasGradient = document.createElement('canvas');
@@ -139,36 +180,35 @@ function setupBackground() {
     scene.add(background);
 }
 
-
-// Function to update the background texture size on window resize
-function onWindowResize() {
-    characterSprite.position.set(-(window.innerWidth / window.innerHeight) * 10, 0, -15);
-}
-
-
 // Function to start the game based on selected difficulty
 function startGame(difficulty) {
     removeGameOverElements();
     gameOver = false;
     score = 0;
     collidingSprites = []; // Clear collidingSprites array
-
     // Adjust the frequency of generated colliding sprites based on difficulty
     switch (difficulty) {
         case 'Easy':
-            spriteGenerationFrequency = 0.005; // Adjust as needed
-            break;
-        case 'Medium':
             spriteGenerationFrequency = 0.01; // Adjust as needed
             break;
+        case 'Medium':
+            spriteGenerationFrequency = 0.05; // Adjust as needed
+            break;
         case 'Satya Nadella':
-            spriteGenerationFrequency = 0.02; // Adjust as needed
+            spriteGenerationFrequency = 0.1; // Adjust as needed
             break;
         default:
-            spriteGenerationFrequency = 0.005; // Default to easy
+            spriteGenerationFrequency = 0.01; // Default to easy
             break;
     }
+    gameLoop();
 }
+
+// Function to update the character placement in window
+function onWindowResize() {
+    characterSprite.position.set(-(window.innerWidth / window.innerHeight) * 10, 0, -15);
+}
+
 // Function to create colliding sprites based on selected frequency
 function createSpriteBasedOnDifficulty() {
     if (!gameOver && Math.random() < spriteGenerationFrequency) {
@@ -231,7 +271,6 @@ function movecollidingSprites() {
     }
 }
 
-
 // Function to handle character movement
 function handleCharacterMovement(event) {
     if (event.type === 'keydown') {
@@ -249,9 +288,29 @@ function handleCharacterMovement(event) {
     }
 }
 
-// Event listeners for character movement
-window.addEventListener('keydown', handleCharacterMovement);
-window.addEventListener('keyup', handleCharacterMovement);
+// Event listeners for touch events
+window.addEventListener('touchstart', handleTouchStart);
+window.addEventListener('touchend', handleTouchEnd);
+
+// Function to handle touchstart event
+function handleTouchStart(event) {
+    event.preventDefault();
+    const touchY = event.touches[0].clientY;
+    const screenHeight = window.innerHeight;
+    if (touchY < screenHeight / 2) {
+        isMovingUp = true;
+        isMovingDown = false;
+    } else {
+        isMovingDown = true;
+        isMovingUp = false;
+    }
+}
+
+// Function to handle touchend event
+function handleTouchEnd() {
+    isMovingUp = false;
+    isMovingDown = false;
+}
 
 function getCharacterBoundingBox(characterOldBox) {
     // Get the character's bounding box
@@ -327,6 +386,7 @@ function checkCollision() {
                 restartButton.style.transform = 'translate(-50%, -50%)';
                 restartButton.style.color = '#FF0000';
                 restartButton.style.fontSize = '2rem';
+                restartButton.style.textAlign = 'center'
                 restartButton.style.border = '2px solid #FF0000'; // Border style
                 restartButton.style.borderRadius = '10px'; // Rounded corners
                 restartButton.style.boxShadow = '2px 2px 4px rgba(0, 0, 0, 0.3)'; // Shadow
@@ -351,9 +411,9 @@ function checkCollision() {
         }
     }
 }
-// Game loop
-function animate() {
 
+// main movement of characters and sprites
+function animate() {
     requestAnimationFrame(animate);
 
     if (!gameOver) {
@@ -368,9 +428,7 @@ function animate() {
             }
         }
         // Create a new sprite occasionally
-        if (Math.random() < 0.01) { // Adjust the probability as needed
-            createMovingSprite();
-        }
+        createSpriteBasedOnDifficulty();
 
         movecollidingSprites();
 
@@ -384,19 +442,12 @@ function animate() {
     }
 }
 
-window.addEventListener('resize', onWindowResize);
-
-// Start the game loop
-// Start game loop with difficulty-based sprite creation
 function gameLoop() {
-    createSpriteBasedOnDifficulty();
     animate();
-    requestAnimationFrame(gameLoop);
-}
-if (!gameOver) {
-    gameLoop();
 }
 
-// setupScoreDisplay
-// load character
-// load background
+// main execution
+// Initialize the game by creating difficulty selection buttons
+// this later calls the gameloop
+
+createDifficultyButtons();
